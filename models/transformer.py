@@ -13,7 +13,9 @@ class TransformerModel(nn.Module):
         self.model_type = "Transformer"
         self.src_mask = None
         self.pos_encoder = PositionalEncoding(ninp, dropout)
-        decoder_layers = TransformerDecoderLayer(ninp, nhead, nhid, dropout)
+        decoder_layers = TransformerDecoderLayer(
+            ninp, nhead, nhid, dropout, batch_first=True
+        )
         self.transformer_decoder = TransformerDecoder(decoder_layers, nlayers)
         self.encoder = nn.Embedding(ntoken, ninp)
         self.ninp = ninp
@@ -39,11 +41,12 @@ class TransformerModel(nn.Module):
     def forward(self, src):
         if self.src_mask is None or self.src_mask.size(0) != len(src):
             device = src.device
-            mask = self._generate_square_subsequent_mask(len(src)).to(device)
+            mask = self._generate_square_subsequent_mask(src.shape[1]).to(device)
             self.src_mask = mask
 
-        src = self.encoder(src) * torch.sqrt(self.ninp)
+        src = self.encoder(src) * torch.sqrt(torch.tensor(self.ninp).float())
         src = self.pos_encoder(src)
-        output = self.transformer_decoder(src, self.src_mask)
+        output = self.transformer_decoder(memory=src, tgt_mask=self.src_mask, tgt=src)
         output = self.decoder(output)
+
         return output
