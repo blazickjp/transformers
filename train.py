@@ -54,6 +54,8 @@ for epoch in range(epochs):
     total_loss = 0
     pbar = tqdm(total=len(data_loader), desc=f"Training Epoch: {epoch+1}", unit="batch")
     for i, (input, target) in enumerate(data_loader):
+        if input.shape[0] != batch_size:
+            continue
         # Move tensors to the correct device
         input = input.to(device)
         target = target.to(device)
